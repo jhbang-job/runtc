@@ -1,14 +1,57 @@
-######################################
-#버전 : 0.1
+﻿######################################
+#버전 : 0.2
 #사용방법 : c:\> python runtc.py [엑셀경로]
+#          GUI 실행
 ######################################
 
 import sys
 import pyautogui  
 import time
 import xlwings as xw
+from PyQt5.QtWidgets import *
 
 	
+######################################
+# GUI
+######################################
+class MyWindow(QWidget):
+	def __init__(self):
+		super().__init__()
+		self.setupUI()
+		self.result = None
+
+	def setupUI(self):
+		self.setGeometry(800, 200, 300, 300)
+		self.setWindowTitle("runtc v0.2")
+
+		self.pushButton = QPushButton("불러오기")
+		self.pushButton.clicked.connect(self.pushButtonClicked)
+		self.label = QLabel()
+
+		self.btn1 = QPushButton("실행", self)
+		self.btn1.move(11, 40)
+		self.btn1.clicked.connect(self.btn1_clicked)
+
+		layout = QVBoxLayout()
+		layout.addWidget(self.pushButton)
+		layout.addWidget(self.btn1)
+		layout.addWidget(self.label)
+
+		self.setLayout(layout)
+
+	def pushButtonClicked(self):
+		fname = QFileDialog.getOpenFileName(self)
+		self.label.setText(fname[0])
+		self.result = fname[0]
+		return self.result
+
+
+	def btn1_clicked(self, result):
+		
+		txt = main(self.result)
+		QMessageBox.about(self, "message", txt)
+		
+
 ######################################
 # pyautogui
 ######################################
@@ -71,8 +114,10 @@ def 시간지연(초):
 
 #file = "d:/runtc/tmp/tcrun_test.xlsx"
 #wb = xw.Book(file)
+wb = None
 
 def image읽기(이미지):
+	global wb
 	sht = wb.sheets['image']
 	a = sht.pictures(이미지)
 	img_b = a.api.Copy()
@@ -82,7 +127,7 @@ def image읽기(이미지):
 	return pic
 
 def tc읽기():
-	
+	global wb
 	sht = wb.sheets['tc']
 	endLine = wb.sheets['tc'].used_range.address.split('$')[4]
 	Line = sht.api.Cells.Find('tcrun')
@@ -178,8 +223,35 @@ def TC문법_수행(tc):
 ######################################
 # 테스트 수행
 ######################################
-			
+def main(file):
+	global wb
+	if file != None and "xlsx" in file :
+		wb = xw.Book(file)
+		tc = tc읽기()
+		tc = tc.value
+		for i in tc:
+			try:
+				TC문법_수행(i)
+			except:
+				messge = "테스트 종료"
+				print(messge)
+				return messge
+	
+	else:
+		messge = "xlsx 파일이 아닙니다."
+		print(messge)
+		return messge
+		#sys.exit(1)
+	
+
+def gui():
+	app = QApplication(sys.argv)
+	window = MyWindow()
+	window.show()
+	app.exec_()
+
 def run():
+	'''
 	#시작버튼 = image읽기('시작버튼')
 	#더블클릭(이미지=시작버튼)
 	파라미터 = ['win', 'd']
@@ -190,27 +262,24 @@ def run():
 	키보드누르기("'enter'")
 	시간지연(2)
 	핫키("'win', 'up'")
-
+	'''
+	app = QApplication(sys.argv)
+	window = MyWindow()
+	window.show()
+	app.exec_()
+	
+	
 if __name__=="__main__":
-
-		
 	try:
 		file = sys.argv[1]
 		
 	except:
 		file = None
-		print("xlsx 경로를 입력하세요")
-		file = "D:/runtc/tc/runtc_sample.xlsx"
-		#sys.exit(1)
-	
-	wb = xw.Book(file)
-
-	tc = tc읽기()
-	tc = tc.value
-	for i in tc:
-		try:
-			TC문법_수행(i)
-		except:
-			print("테스트종료")
-			sys.exit(1)
+		#file = "D:/runtc/tc/runtc_sample.xlsx"
 		
+	#main(file)
+	if file == None:
+		gui()
+	else:
+		main(file)
+	
